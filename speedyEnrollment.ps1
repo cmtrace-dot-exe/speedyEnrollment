@@ -6,7 +6,10 @@
 param (
 [switch] $log,
 [string] $logPath = "$env:public\speedyEnrollment\$env:computername.log",
-[string] $stagingDirectory = "$env:public\speedyEnrollment"
+[string] $stagingDirectory = "$env:public\speedyEnrollment",
+[string] $topText1 = "DO NOT USE",
+[string] $topText2 = "ENROLLMENT PENDING",
+[string] $bottomText = ""
 )
 
 # trim any trailing backslashes from $stagingDirectory so things don't go kablooie
@@ -27,6 +30,8 @@ param (
 
 # ingest data.xml
     $xmlData = Import-Clixml -Path "$stagingDirectory\data.xml"
+
+
 
 # change power management settings to prevent interruption of onboarding workflow
     
@@ -64,9 +69,6 @@ param (
 
         # Apply all changes
         powercfg /S 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
-
-
-        
 
 logwrite $(get-date), "-------------------------------"
 
@@ -127,7 +129,6 @@ logwrite $(get-date), "-------------------------------"
                         
                     # specifiy task principal	
                         $principal = New-ScheduledTaskPrincipal -UserID "NT Authority\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-                            #-RunLevel Highest `
 
                     # Register the scheduled task
                         Register-ScheduledTask `
@@ -146,13 +147,18 @@ logwrite $(get-date), "-------------------------------"
                         -Trigger $taskTriggerMod
                     
                 # add task sequence information to step 02 wallpaper and write to default wallpaper location, update step in data.xml and restart 
-                    # copy-item "$stagingDirectory\doNotUseEnrollmentPending_02.jpg" -destination "$env:windir\web\screen\img100.jpg" -force
+                # Set default bottomText if not provided
+                if ([string]::IsNullOrEmpty($bottomText)) {$bottomText = "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"                   }
+                
                 Add-TextToImage -InputImagePath "$stagingDirectory\doNotUseEnrollmentPending_02.jpg" `
-                 -OutputImagePath "$env:windir\web\screen\img100.jpg" `
-                 -Text "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"
+                    -OutputImagePath "$env:windir\web\screen\img100.jpg" `
+                    -TopText1 $topText1 `
+                    -TopText2 $topText2 `
+                    -BottomText $bottomText
+                    
                 # update step in data.xml file
                     $xmlData.currentStep = "02"
-					$xmlData | Export-Clixml -Path "$stagingDirectory\data.xml" -Force	            
+                    $xmlData | Export-Clixml -Path "$stagingDirectory\data.xml" -Force	            
                 Restart-Computer -force
                 exit
     }
@@ -165,5 +171,4 @@ else {
     logwrite $(get-date), "Entra Joined: NO"
     logwrite $(get-date), "Triggering Automatic-Device-Join Task..."
     Start-ScheduledTask -TaskName "Automatic-Device-Join"
-
 }
