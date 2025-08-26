@@ -12,6 +12,9 @@ param (
 # trim any trailing backslashes from $stagingDirectory so things don't go kablooie
     $stagingDirectory = $stagingDirectory.trimend("\")
 
+# Import textOverlay Module
+    . "$PSScriptRoot\textOverlay.ps1"
+
 # configure logging if $log is TRUE, log nothing if not
     if ($log) {
         Function LogWrite ([string]$logstring) {Add-Content -Path $logPath -Value $logstring}
@@ -66,38 +69,6 @@ param (
         
 
 logwrite $(get-date), "-------------------------------"
-
-if ($xmlData.taskSequenceComplete -eq "false") {
-    # Get the completion time of the task sequence stored in xmlData.taskSequenceID
-    try {
-        $lastCompletedTS = Get-CimInstance -Namespace "root\ccm\SoftMgmtAgent" -ClassName "CCM_TaskExecutionStatus" -ErrorAction Stop | 
-                        Where-Object { $_.PackageID -eq $xmlData.taskSequenceID } | 
-                        Sort-Object -Property LastStatusTime -Descending | 
-                        Select-Object -First 1
-        
-        if ($lastCompletedTS -and $lastCompletedTS.LastStatusTime) {
-            # Update the completion time in xmlData and mark as complete
-            $xmlData.taskSequenceCompletionTime = $lastCompletedTS.LastStatusTime.ToString("yyyy-MM-dd HH:mm:ss")
-            $xmlData.taskSequenceComplete = "true"
-            
-            # Save the updated data back to XML file
-            $xmlData | Export-Clixml -Path "$stagingDirectory\data.xml" -Force
-            
-            # add task sequence information to lock screen image and write to default wallpaper location
-            Add-TextToImage -InputImagePath "$stagingDirectory\doNotUseEnrollmentPending_01.jpg" `
-                 -OutputImagePath "$env:windir\web\screen\img100.jpg" `
-                 -Text "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"
-
-            logwrite "$(get-date), Task sequence completion time retrieved: $($xmlData.taskSequenceCompletionTime)"
-            Restart-Computer -force
-            exit
-        } else {
-            logwrite "$(get-date), Task sequence $($xmlData.taskSequenceID) completion time not found in WMI"
-        }
-    } catch {
-        logwrite "$(get-date), Error retrieving task sequence completion time: $($_.Exception.Message)"
-    }
-}
 
 ##################################################################
 # evaluate and act upon entra join & intune enrollment condition #
@@ -195,72 +166,4 @@ else {
     logwrite $(get-date), "Triggering Automatic-Device-Join Task..."
     Start-ScheduledTask -TaskName "Automatic-Device-Join"
 
-}
-
-function Add-TextToImage {
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$InputImagePath,
-        [Parameter(Mandatory=$true)]
-        [string]$OutputImagePath,
-        [Parameter(Mandatory=$true)]
-        [string]$Text,
-        [string]$FontName = "Segoe UI",
-        [int]$FontSize = 33,
-        [string]$FontStyle = "Bold",
-        [string]$TextColor = "White",
-        [ValidateSet("Left","Center","Right")]
-        [string]$HorizontalAlign = "Center",
-        [int]$YOffset = 30
-    )
-
-    Add-Type -AssemblyName System.Drawing
-
-    $graphics = $null
-    $bitmap = $null
-    $originalImage = $null
-    $brush = $null
-    $font = $null
-    try {
-        $originalImage = [System.Drawing.Image]::FromFile($InputImagePath)
-        $bitmap = New-Object System.Drawing.Bitmap($originalImage.Width, $originalImage.Height, $originalImage.PixelFormat)
-        $bitmap.SetResolution($originalImage.HorizontalResolution, $originalImage.VerticalResolution)
-        $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
-        $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
-        $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-        $graphics.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
-        $graphics.DrawImage($originalImage, 0, 0, $originalImage.Width, $originalImage.Height)
-
-        $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::$TextColor)
-        $fontStyleEnum = [System.Drawing.FontStyle]::$FontStyle
-        $font = New-Object System.Drawing.Font($FontName, $FontSize, $fontStyleEnum)
-        $textSize = $graphics.MeasureString($Text, $font)
-
-        switch ($HorizontalAlign) {
-            "Left"   { $x = 0 }
-            "Center" { $x = ($bitmap.Width - $textSize.Width) / 2 }
-            "Right"  { $x = $bitmap.Width - $textSize.Width }
-        }
-        $y = $bitmap.Height - $textSize.Height - $YOffset
-
-        $graphics.DrawString($Text, $font, $brush, $x, $y)
-
-        $jpegEncoder = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object { $_.MimeType -eq "image/jpeg" }
-        $encoderParams = New-Object System.Drawing.Imaging.EncoderParameters(1)
-        $encoderParams.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter([System.Drawing.Imaging.Encoder]::Quality, 100L)
-        $bitmap.Save($OutputImagePath, $jpegEncoder, $encoderParams)
-        Write-Host "Text successfully added to image!" -ForegroundColor Green
-        Write-Host "Output saved as: $OutputImagePath" -ForegroundColor Green
-    }
-    catch {
-        Write-Error "An error occurred while processing the image: $($_.Exception.Message)"
-    }
-    finally {
-        if ($graphics) { $graphics.Dispose() }
-        if ($bitmap) { $bitmap.Dispose() }
-        if ($originalImage) { $originalImage.Dispose() }
-        if ($brush) { $brush.Dispose() }
-        if ($font) { $font.Dispose() }
-    }
 }
