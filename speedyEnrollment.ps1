@@ -5,6 +5,7 @@
 
 param (
 [switch] $log,
+[switch] $speedy,
 [string] $logPath = "$env:public\speedyEnrollment\$env:computername.log",
 [string] $stagingDirectory = "$env:public\speedyEnrollment",
 [string] $topText1 = "DO NOT USE",
@@ -16,7 +17,7 @@ param (
     $stagingDirectory = $stagingDirectory.trimend("\")
 
 # Import textOverlay Module
-    . "$PSScriptRoot\textOverlay.ps1"
+    . "$stagingDirectory\textOverlay.ps1"
 
 # configure logging if $log is TRUE, log nothing if not
     if ($log) {
@@ -31,44 +32,56 @@ param (
 # ingest data.xml
     $xmlData = Import-Clixml -Path "$stagingDirectory\data.xml"
 
+# Check for presence of power scheme export file, export current power plan for later restoration, switch to high performance scheme and disable sleep settings if not extant
+    if (!(Test-Path "$stagingDirectory\PowerBackup.pow")) {
 
+        # retrieve current power plan GUID
+        $powerGUID = (Get-CimInstance -Namespace root\cimv2\power -ClassName Win32_PowerPlan | 
+            Where-Object IsActive).InstanceID -replace '.*\{|\}.*',''
 
-# change power management settings to prevent interruption of onboarding workflow
-    
-        # Switch to High Performance Plan
-        powercfg /S 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+        # store power scheme GUID in data.xml file for later retrieval
+        $xmlData.powerGUID = $powerGUID
+        $xmlData | Export-Clixml -Path "$stagingDirectory\data.xml" -Force	
 
-        # Never turn off display or sleep
-        powercfg /X monitor-timeout-ac 0
-        powercfg /X monitor-timeout-dc 0
-        powercfg /X standby-timeout-ac 0
-        powercfg /X standby-timeout-dc 0
-        powercfg /X hibernate-timeout-ac 0
-        powercfg /X hibernate-timeout-dc 0
+        # export power scheme details to file
+        powercfg /export "$stagingDirectory\powerBackup.pow" $powerGUID
 
-        # Processor: full performance
-        powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMIN 100
-        powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMAX 100
-        powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PROCESSOR IDLEDISABLE 1
+        # change power management settings to prevent interruption of onboarding workflow
+            # Switch to High Performance Plan
+            powercfg /S 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
 
-        # Disable hard disk sleep
-        powercfg /X disk-timeout-ac 0
-        powercfg /X disk-timeout-dc 0
+            # Never turn off display or sleep
+            powercfg /X monitor-timeout-ac 0
+            powercfg /X monitor-timeout-dc 0
+            powercfg /X standby-timeout-ac 0
+            powercfg /X standby-timeout-dc 0
+            powercfg /X hibernate-timeout-ac 0
+            powercfg /X hibernate-timeout-dc 0
 
-        # Disable USB selective suspend
-        powercfg /SETACVALUEINDEX SCHEME_MIN SUB_USB USBSELECTIVE 0
+            # Processor: full performance
+            powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMIN 100
+            powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PROCESSOR PROCTHROTTLEMAX 100
+            powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PROCESSOR IDLEDISABLE 1
 
-        # Disable PCI Express Link State Power Management
-        powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PCIEXPRESS ASPM 0
+            # Disable hard disk sleep
+            powercfg /X disk-timeout-ac 0
+            powercfg /X disk-timeout-dc 0
 
-        # Wireless: Max Performance
-        powercfg /SETACVALUEINDEX SCHEME_MIN SUB_WIFI POWER_SAVING_MODE 0
-        
-        # Disable Hibernation
-        powercfg /hibernate off
+            # Disable USB selective suspend
+            powercfg /SETACVALUEINDEX SCHEME_MIN SUB_USB USBSELECTIVE 0
 
-        # Apply all changes
-        powercfg /S 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+            # Disable PCI Express Link State Power Management
+            powercfg /SETACVALUEINDEX SCHEME_MIN SUB_PCIEXPRESS ASPM 0
+
+            # Wireless: Max Performance
+            powercfg /SETACVALUEINDEX SCHEME_MIN SUB_WIFI POWER_SAVING_MODE 0
+            
+            # Disable Hibernation
+            powercfg /hibernate off
+
+            # Apply all changes
+            powercfg /S 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c
+    }
 
 logwrite $(get-date), "-------------------------------"
 
@@ -83,7 +96,7 @@ logwrite $(get-date), "-------------------------------"
     if ($dsregcmd.AzureAdJoined -eq 'YES') {
         logwrite $(get-date), "Entra Joined: YES"
         
-    # check intune $EnrollmentKey in registry and take action if entra joined + intune enrolled
+        # check intune $EnrollmentKey in registry and take action if entra joined + intune enrolled
         $EnrollmentKey = Get-Item -Path HKLM:\SOFTWARE\Microsoft\Enrollments\* | Get-ItemProperty | Where-Object -FilterScript {$null -ne $_.UPN}	
         if($($EnrollmentKey) -and $($EnrollmentKey.EnrollmentState -eq 1)){
             logwrite $(get-date), "Intune Enrolled: YES"
@@ -91,64 +104,74 @@ logwrite $(get-date), "-------------------------------"
             
             # remove speedyEnrollment scheduled task
             Unregister-ScheduledTask -TaskName "Speedy Enrollment" -Confirm:$false
-            Unregister-ScheduledTask -TaskName "Speedy Enrollment SCCM Policy Reset" -Confirm:$false
+            If ($speedy) {Unregister-ScheduledTask -TaskName "Speedy Enrollment SCCM Policy Reset" -Confirm:$false}
 
             # return lockscreen image to normal
             copy-item "$stagingDirectory\originalLockScreen.jpg" -destination "$env:windir\web\screen\img100.jpg" -force
+
+            # Restore saved power management scheme
+            powercfg /import "$stagingDirectory\powerBackup.pow"
+            powercfg /setactive $($xmlData.powerGUID)
+
             Restart-Computer -force
         }
+
         else {
             # if entra joined but not intune enrolled, check value stored in data.xml and change lock screen wallpaper if value is NOT "02"
-            if($xmlData.currentStep -NE "02"){ 
+            if($xmlData.currentStep -NE "02"){
                 logwrite $(get-date), "Intune Enrolled: NO"
-                logwrite $(get-date), "Creating SCCM policy reset scheduled task and restarting computer..."
                 
-                # Create SCCM policy reset scheduled task to run in 5 minutes
+                If ($speedy) {
+                    logwrite $(get-date), "[SPEEDY] Creating SCCM policy reset scheduled task and restarting computer..."
+                    
+                    # Create SCCM policy reset scheduled task to run in 5 minutes
 
-                    # Create a new task action
-                    $argumentString = "-NoProfile -ExecutionPolicy Bypass -File $stagingDirectory\policyReset.ps1"
-                    if ($log) {
-                        $argumentString += " -log -logPath $logPath"
-                    }	
-                    $taskAction = New-ScheduledTaskAction `
-                            -WorkingDirectory "$env:windir\system32\windowspowershell\v1.0" `
-                            -Execute "Powershell.exe" `
-                            -Argument $argumentString
-                
-                    # create task trigger/schedule
-                        $taskTrigger = New-ScheduledTaskTrigger -Once -At ([datetime]::Now.AddMinutes(05))
+                        # Create a new task action
+                        $argumentString = "-NoProfile -ExecutionPolicy Bypass -File $stagingDirectory\policyReset.ps1"
+                        if ($log) {
+                            $argumentString += " -log -logPath $logPath"
+                        }	
+                        $taskAction = New-ScheduledTaskAction `
+                                -WorkingDirectory "$env:windir\system32\windowspowershell\v1.0" `
+                                -Execute "Powershell.exe" `
+                                -Argument $argumentString
+                    
+                        # create task trigger/schedule
+                            $taskTrigger = New-ScheduledTaskTrigger -Once -At ([datetime]::Now.AddMinutes(05))
 
-                    # The name of the scheduled task.
-                        $taskName = "Speedy Enrollment SCCM Policy Reset"
+                        # The name of the scheduled task.
+                            $taskName = "Speedy Enrollment SCCM Policy Reset"
 
-                    # Describe the scheduled task.
-                        $description = "Scheduled SCCM policy reset to kickstart speedy enrollment process of SCCM clients into AAD and Intune. Deployed by olearym."
+                        # Describe the scheduled task.
+                            $description = "Scheduled SCCM policy reset to kickstart speedy enrollment process of SCCM clients into AAD and Intune. Deployed by olearym."
 
-                    # create settings set
-                        $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Compatibility Win8
+                        # create settings set
+                            $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -Compatibility Win8
+                            
+                        # specifiy task principal	
+                            $principal = New-ScheduledTaskPrincipal -UserID "NT Authority\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+
+                        # Register the scheduled task
+                            Register-ScheduledTask `
+                                -TaskName $taskName `
+                                -Action $taskAction `
+                                -Trigger $taskTrigger `
+                                -Description $description `
+                                -Settings $settings `
+                                -Principal $principal
                         
-                    # specifiy task principal	
-                        $principal = New-ScheduledTaskPrincipal -UserID "NT Authority\SYSTEM" -LogonType ServiceAccount -RunLevel Highest
+                    # change "Speedy Enrollment" scheduled task tempo to once every 15 minutes
+                        $taskNameMod = "Speedy Enrollment"
+                        $taskTriggerMod = New-ScheduledTaskTrigger -Once -At ([datetime]::Now.AddMinutes(15)) -RepetitionInterval (New-TimeSpan -Minutes 15)
+                        set-scheduledTask  `
+                            -TaskName $taskNameMod `
+                            -Trigger $taskTriggerMod
+                }
 
-                    # Register the scheduled task
-                        Register-ScheduledTask `
-                            -TaskName $taskName `
-                            -Action $taskAction `
-                            -Trigger $taskTrigger `
-                            -Description $description `
-                            -Settings $settings `
-                            -Principal $principal
-                    
-                # change "Speedy Enrollment" scheduled task tempo to once every 15 minutes
-                    $taskNameMod = "Speedy Enrollment"
-                    $taskTriggerMod = New-ScheduledTaskTrigger -Once -At ([datetime]::Now.AddMinutes(15)) -RepetitionInterval (New-TimeSpan -Minutes 15)
-                    set-scheduledTask  `
-                        -TaskName $taskNameMod `
-                        -Trigger $taskTriggerMod
-                    
                 # add task sequence information to step 02 wallpaper and write to default wallpaper location, update step in data.xml and restart 
+                
                 # Set default bottomText if not provided
-                if ([string]::IsNullOrEmpty($bottomText)) {$bottomText = "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"                   }
+                if ([string]::IsNullOrEmpty($bottomText)) {$bottomText = "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"}
                 
                 Add-TextToImage -InputImagePath "$stagingDirectory\doNotUseEnrollmentPending_02.jpg" `
                     -OutputImagePath "$env:windir\web\screen\img100.jpg" `
@@ -161,14 +184,23 @@ logwrite $(get-date), "-------------------------------"
                     $xmlData | Export-Clixml -Path "$stagingDirectory\data.xml" -Force	            
                 Restart-Computer -force
                 exit
+                }
+            logwrite $(get-date), "Intune Enrolled: NO"
+
+            If ($speedy) {
+                logwrite $(get-date), "[SPEEDY] Restarting CCMEXEC Service..."
+                Start-ScheduledTask -TaskName "Automatic-Device-Join"
+                exit
+            }
+        }
     }
-    logwrite $(get-date), "Intune Enrolled: NO"
-    logwrite $(get-date), "Restarting CCMEXEC Service..."
-    restart-service ccmexec
+    else {
+        logwrite $(get-date), "Entra Joined: NO"
+
+        if ($speedy) {
+            logwrite $(get-date), "[SPEEDY] Triggering Automatic-Device-Join Task..."
+            Start-ScheduledTask -TaskName "Automatic-Device-Join"
+            exit
+        }
+        
     }
-}
-else {
-    logwrite $(get-date), "Entra Joined: NO"
-    logwrite $(get-date), "Triggering Automatic-Device-Join Task..."
-    Start-ScheduledTask -TaskName "Automatic-Device-Join"
-}

@@ -15,7 +15,7 @@ else {
 }
 
 logwrite $(get-date), "-------------------------------"
-logwrite $(get-date), "Triggering 'Speedy Enrollment SCCM Policy Reset' task and restarting CCMEXEC service..."
+logwrite $(get-date), "[SPEEDY] Triggering 'Speedy Enrollment SCCM Policy Reset' task and restarting CCMEXEC service..."
 
 Invoke-CimMethod -Namespace root\ccm -ClassName sms_client -Name ResetPolicy -Arguments @{ uFlags = ([UInt32]1) }
 start-sleep -seconds 10
