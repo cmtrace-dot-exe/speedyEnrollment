@@ -44,6 +44,7 @@ All parameters are optional:
 	[Default: ""]
 	Bottom text area. If empty, defaults to "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"
 
-Example:
+Examples:
 	.\copyAndScheduleTask.ps1 -repetitionInterval 5 -stagingDirectory $env:public\speedyEnrollment -speedy -log -logpath \\fileFarm.contoso.com\enrollmentLogs\$env:computername.log
+	.\copyAndScheduleTask.ps1 -repetitionInterval 5 -stagingDirectory $env:public\speedyEnrollment -toptext1 'HERE IS SOME' -TOPTEXT2 'CUSTOM TEXT' -BOTTOMTEXT 'YOU CAN DISPLAY ON THE LOCK SCREEN' -log -logpath \\fileFarm.contoso.com\enrollmentLogs\$env:computername.log
 ```
