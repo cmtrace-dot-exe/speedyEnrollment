@@ -17,7 +17,7 @@ All parameters are optional:
 	Your mileage may very much vary.
 
 -log switch  
-		[Default: disabled]  
+	[Default: disabled]  
 	Enables optional logging.  
 
 -logpath string  
@@ -29,7 +29,7 @@ All parameters are optional:
 	Number of minutes to wait between each run of the scheduled task.
 
 -stagingDirectory string
-	[Default: "$env:public\enrollmentStatus"]
+	[Default: "$env:public\speedyEnrollment"]
 	Local staging directory for speedyEnrollment.ps1 and lock screen wallpaper.
 
 -topText1 string
