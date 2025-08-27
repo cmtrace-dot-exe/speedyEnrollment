@@ -1,8 +1,9 @@
 Add a "Run Powershell Script" step to your task sequence, select your uploaded package and reference copyAndScheduleTask.ps1.
+
 Insert this step as close to the end of your task sequence as is practical.
 
-All parameters are optional
-
+All parameters are optional:
+```
 -speedy switch
 	[Default: disabled]
 	Enables speedy enrollment mode, which cyclically...
@@ -13,13 +14,13 @@ All parameters are optional
 
 	PLEASE NOTE: this feature is experimental and tuned to my particular environment. Enabling this feature may very well *slow down* your enrollments if they're already pretty swift. Your mileage may very much vary.
 
--log switch
-	[Default: disabled]
-	Enables optional logging.
+-log switch  
+		[Default: disabled]  
+	Enables optional logging.  
 
--logpath string 
-	[Default: $env:public\enrollmentStatus\$env:computername.log]
-	Path and name of optional log.
+-logpath string  
+	[Default: $env:public\enrollmentStatus\$env:computername.log] 
+	Path and name of optional log. 
 
 -repetitionInterval int 
 	[Default: 5]
@@ -43,3 +44,4 @@ All parameters are optional
 
 Example:
 	.\copyAndScheduleTask.ps1 -repetitionInterval 5 -stagingDirectory $env:public\speedyEnrollment -speedy -log -logpath \\fileFarm.contoso.com\enrollmentLogs\$env:computername.log
+```
