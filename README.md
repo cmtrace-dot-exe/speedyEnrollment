@@ -12,7 +12,9 @@ All parameters are optional:
 		clears caches (ConfigMgr client)
 	...in an effort to prod the enrollment process along.
 
-	PLEASE NOTE: this feature is experimental and tuned to my particular environment. Enabling this feature may very well *slow down* your enrollments if they're already pretty swift. Your mileage may very much vary.
+	PLEASE NOTE: this feature is experimental and tuned to my particular environment.
+	Enabling this feature may very well *slow down* your enrollments if they're already pretty swift.
+	Your mileage may very much vary.
 
 -log switch  
 		[Default: disabled]  
