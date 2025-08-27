@@ -21,7 +21,11 @@ param (
 
 # configure logging if $log is TRUE, log nothing if not
     if ($log) {
-        Function LogWrite ([string]$logstring) {Add-Content -Path $logPath -Value $logstring}
+        Function LogWrite ([string]$logstring) {
+            $streamWriter = New-Object System.IO.StreamWriter($logPath, $true, [System.Text.Encoding]::UTF8)
+            $streamWriter.WriteLine($logstring)
+            $streamWriter.Dispose()
+        }
     } 
     else {
         Function LogWrite ([string]$logstring) {

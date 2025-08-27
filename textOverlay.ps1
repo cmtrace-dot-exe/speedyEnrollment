@@ -1,7 +1,7 @@
 ############################################################################################################
-### Image Text Utilities Module
+### Add-TextToImage Module
 ### Contains functions for adding text to images
-### Mike O'Leary | mikeoleary.net | @cmtrace-dot-exe 
+### Mike O'Leary | mikeoleary.net | @cmtrace-dot-exe
 ############################################################################################################
 
 function Add-TextToImage {
