@@ -8,6 +8,7 @@ param (
 [switch] $speedy,
 [string] $logPath = "$env:public\speedyEnrollment\$env:computername.log",
 [string] $stagingDirectory = "$env:public\speedyEnrollment",
+[string] $lockScreenPath = "$env:windir\web\screen\img100.jpg",
 [string] $topText1 = "DO NOT USE",
 [string] $topText2 = "ENROLLMENT PENDING",
 [string] $bottomText = ""
@@ -25,6 +26,9 @@ param (
             $streamWriter = New-Object System.IO.StreamWriter($logPath, $true, [System.Text.Encoding]::UTF8)
             $streamWriter.WriteLine($logstring)
             $streamWriter.Dispose()
+            
+            # not proud of this but it's an uncomplicated way to prevent file write conflicts
+            Start-Sleep -Milliseconds 100
         }
     } 
     else {
@@ -111,7 +115,7 @@ logwrite $(get-date), "-------------------------------"
             If ($speedy) {Unregister-ScheduledTask -TaskName "Speedy Enrollment SCCM Policy Reset" -Confirm:$false}
 
             # return lockscreen image to normal
-            copy-item "$stagingDirectory\originalLockScreen.jpg" -destination "$env:windir\web\screen\img100.jpg" -force
+            copy-item "$stagingDirectory\originalLockScreen.jpg" -destination $lockScreenPath -force
 
             # Restore saved power management scheme
             powercfg /import "$stagingDirectory\powerBackup.pow"
@@ -177,8 +181,8 @@ logwrite $(get-date), "-------------------------------"
                 # Set default bottomText if not provided
                 if ([string]::IsNullOrEmpty($bottomText)) {$bottomText = "Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"}
                 
-                Add-TextToImage -InputImagePath "$stagingDirectory\doNotUseEnrollmentPending_02.jpg" `
-                    -OutputImagePath "$env:windir\web\screen\img100.jpg" `
+                Add-TextToImage -InputImagePath "$stagingDirectory\step_02.jpg" `
+                    -OutputImagePath $lockScreenPath `
                     -TopText1 $topText1 `
                     -TopText2 $topText2 `
                     -BottomText $bottomText
