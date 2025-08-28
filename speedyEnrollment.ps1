@@ -25,10 +25,8 @@ param (
         Function LogWrite ([string]$logstring) {
             $streamWriter = New-Object System.IO.StreamWriter($logPath, $true, [System.Text.Encoding]::UTF8)
             $streamWriter.WriteLine($logstring)
+            $streamWriter.Close()
             $streamWriter.Dispose()
-            
-            # not proud of this but it's an uncomplicated way to prevent file write conflicts
-            Start-Sleep -Milliseconds 100
         }
     } 
     else {
