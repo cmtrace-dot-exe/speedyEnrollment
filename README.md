@@ -16,6 +16,10 @@ All parameters are optional:
 	Enabling this feature may very well *slow down* your enrollments if they're already pretty swift.
 	Your mileage may very much vary.
 
+-lockScreenPath string
+	[default: $env:windir\web\screen\img100.jpg]
+	Not necessary unless you've moved your lockscreen image to an alternate location via theme or the registry.
+
 -log switch  
 	[Default: disabled]  
 	Enables optional logging.  
