@@ -1,60 +1,53 @@
-Add a "Run Powershell Script" step to your task sequence, select your uploaded package and reference copyAndScheduleTask.ps1.
+# speedyEnrollment.ps1
+
+Add a "Run Powershell Script" step to your task sequence, select your uploaded package and reference copyAndScheduleTask.ps1.  
+
 Insert this step as close to the end of your task sequence as is practical.
 
-All parameters are optional
+<ins> All parameters are optional</ins> 
 
-### -speedy [switch]
-Default: _disabled_   
+### -speedy _switch_
 >[!IMPORTANT] 
->PLEASE NOTE: this feature is experimental and tuned to my particular environment. Enabling this feature may very well *slow down* your enrollments if they're already pretty swift. Your mileage may very much vary.
-
-    Enables speedy enrollment mode, which cyclically...  
-	
-    - triggers scheduled tasks (Automatic-Device-Join)  
-    - restarts services (CCMEXEC)  
-    - clears caches (ConfigMgr client)
-    
-    ...in an effort to prod the enrollment process along.  
+>PLEASE NOTE: this feature is experimental and tuned to my particular environment. Enabling this feature may very well *slow down* your enrollments if they're already pretty swift. Your mileage may and probably will vary.
+  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _disabled_]  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enables speedy enrollment mode, which cyclically...   
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- triggers scheduled tasks (Automatic-Device-Join)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- restarts services (CCMEXEC)  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- clears caches (ConfigMgr client)     
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;...in an effort to prod the enrollment process along.  
       
-### -lockScreenPath [string]
-Default: _$env:windir\web\screen\img100.jpg_
-    
-	Not necessary unless you've moved your lockscreen image to an alternate location via theme or the registry.
+### -lockScreenPath _string_
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _$env:windir\web\screen\img100.jpg_]  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Not necessary unless you've moved your lockscreen image to an alternate location via theme or the registry.
   
-### -log [switch]  
-Default: _disabled_  
-    
-	Enables optional logging.  
+### -log _switch_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _disabled_]       
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Enables optional logging.  
   
-### -logpath [string]  
-Default: _$env:public\enrollmentStatus\$env:computername.log_  
-    
-	Path and name of optional log.  
+### -logpath _string_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _"$env:public\enrollmentStatus\$env:computername.log"_]      
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Path and name of optional log.  
   
-### -repetitionInterval [int]
-Default: _5_
-    
-	Number of minutes to wait between each run of the scheduled task.  
+### -repetitionInterval _int_
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _5_]    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Number of minutes to wait between each run of the scheduled task.  
   
-### -stagingDirectory [string]  
-Default: _"$env:public\enrollmentStatus"_  
-    
-	Local staging directory for enrollmentStatus.ps1 and lock screen wallpaper.  
+### -stagingDirectory _string_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _"$env:public\enrollmentStatus"_]      
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Local staging directory for enrollmentStatus.ps1 and lock screen wallpaper.  
    
-### -topText1 [string]  
-Default: _"DO NOT USE"_
-    
-	The first line of the top text area  
+### -topText1 _string_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _"DO NOT USE"_]    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The first line of the top text area  
  
-### -topText2 [string]  
-Default: _"ENROLLMENT PENDING"_  
-    
-	The second line of the top text area  
+### -topText2 _string_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: _"ENROLLMENT PENDING"_]    
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The second line of the top text area  
  
-### -bottomText [string]  
-Default: ""
-    
-	Bottom text area. If empty, defaults to _"Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"_  
+### -bottomText _string_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: ""]      
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bottom text area. If empty, defaults to _"Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"_  
 
 # Examples:  
 ```
