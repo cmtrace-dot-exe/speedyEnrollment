@@ -47,7 +47,8 @@ Insert this step as close to the end of your task sequence as is practical.
  
 ### -bottomText _string_  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[Default: ""]      
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bottom text area. If empty, defaults to _"Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"_  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bottom text area. If empty, defaults to  
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_"Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"_  
 
 # Examples:  
 ```
