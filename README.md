@@ -62,3 +62,5 @@ All parameters are <ins>optional</ins>
 
 .\copyAndScheduleTask.ps1 -repetitionInterval 5 -stagingDirectory $env:public\speedyEnrollment -toptext1 'HERE IS SOME' -TOPTEXT2 'CUSTOM TEXT' -BOTTOMTEXT 'YOU CAN DISPLAY ON THE LOCK SCREEN' -log -logpath \\fileFarm.fabrikam.com\enrollmentLogs\$env:computername.log
 ```
+# Sample log output
+<img width="732" height="782" alt="GzXzOYhXsAcLltO" src="https://github.com/user-attachments/assets/7ea9a825-0f27-4e19-95cf-2de7e22904ba" />
