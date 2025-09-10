@@ -1,11 +1,16 @@
-# speedyEnrollment.ps1
+# speedyEnrollment.ps1  
+
 <img width="1920" height="1080" alt="2025-09-10 08_34_47-sr2169-edoleavm cdnet-ad ad cod edu - RD Tabs (Detached Tab)" src="https://github.com/user-attachments/assets/0cadee1a-e9a7-4d53-8fc5-d5fdba532188" />
 
+# Task Sequence
+
 Add a "Run Powershell Script" step to your task sequence, select your uploaded package and reference copyAndScheduleTask.ps1.  
-
-Insert this step as close to the end of your task sequence as is practical.
-
-<ins> All parameters are optional</ins> 
+Insert this step as close to the end of your task sequence as is practical.  
+  
+<img width="938" height="773" alt="GzXykFkXsAEfZj_" src="https://github.com/user-attachments/assets/185e5813-621f-44a2-ba9f-2fb3d4af9fe3" />  
+  
+# Parameters
+All parameters are <ins>optional</ins> 
 
 ### -speedy _switch_
 >[!IMPORTANT] 
@@ -51,7 +56,7 @@ Insert this step as close to the end of your task sequence as is practical.
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Bottom text area. If empty, defaults to  
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_"Task sequence $($xmlData.taskSequenceID) completed at $($xmlData.taskSequenceCompletionTime)"_  
 
-# Examples:  
+# Examples  
 ```
 .\copyAndScheduleTask.ps1 -repetitionInterval 5 -stagingDirectory $env:public\speedyEnrollment -speedy -log -logpath \\fileFarm.contoso.com\enrollmentLogs\$env:computername.log
 
