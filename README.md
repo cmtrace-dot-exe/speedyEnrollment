@@ -1,4 +1,5 @@
 # speedyEnrollment.ps1
+<img width="1920" height="1080" alt="2025-09-10 08_34_47-sr2169-edoleavm cdnet-ad ad cod edu - RD Tabs (Detached Tab)" src="https://github.com/user-attachments/assets/0cadee1a-e9a7-4d53-8fc5-d5fdba532188" />
 
 Add a "Run Powershell Script" step to your task sequence, select your uploaded package and reference copyAndScheduleTask.ps1.  
 
